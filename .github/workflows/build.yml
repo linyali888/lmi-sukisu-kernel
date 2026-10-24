@@ -73,6 +73,7 @@ jobs:
           mkdir -p ak3/kernels
           cp kernel/out/arch/arm64/boot/Image ak3/kernels/Image
           cd ak3
+          chmod +x META-INF/com/google/android/update-binary tools/* 2>/dev/null || true
           zip -r9 "../lmi-sukisu-ultra-4.2.1-susfs-AnyKernel3.zip" .
           cd ..
           sha256sum lmi-sukisu-ultra-4.2.1-susfs-AnyKernel3.zip
