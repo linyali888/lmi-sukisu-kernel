@@ -1,0 +1,16 @@
+--- a/drivers/kernelsu/extension/kpm.c
++++ b/drivers/kernelsu/extension/kpm.c
+@@ -38,6 +38,13 @@
+ #include <linux/moduleloader.h>
+ #endif
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
++/* 4.19 and older: access_ok() still takes a type argument; the inner
++ * access_ok is painted blue by the preprocessor and resolves to the
++ * real three-arg function. */
++#define access_ok(addr, size) access_ok(VERIFY_WRITE, addr, size)
++#endif
++
+ #include "kpm.h"
+ #include "compact.h"
+ 

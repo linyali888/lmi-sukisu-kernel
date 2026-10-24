@@ -44,6 +44,9 @@ jobs:
           grep -q 'config KSU_SUSFS' drivers/kernelsu/Kconfig || cat "$GITHUB_WORKSPACE/susfs_kconfig.fragment" >> drivers/kernelsu/Kconfig
           sed -i 's|#include <linux/static_call.h>|#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\n#include <linux/static_call.h>\n#endif|' drivers/kernelsu/kernel_includes.h
           grep -A1 'static_call.h' drivers/kernelsu/kernel_includes.h | head -3
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0001-cpu_spoof-4.19-vdso-guard.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0002-kpm-4.19-access_ok.patch"
+          test -z "$(find drivers/kernelsu -name '*.rej')"
 
       - name: Apply SUSFS kernel-side patch (4.19 + LOS reconciliation)
         run: |

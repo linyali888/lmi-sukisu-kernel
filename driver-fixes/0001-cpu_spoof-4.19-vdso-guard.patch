@@ -1,0 +1,18 @@
+--- a/drivers/kernelsu/extension/cpu_spoof.c
++++ b/drivers/kernelsu/extension/cpu_spoof.c
+@@ -129,6 +129,7 @@
+             if (part != ARM_CPU_PART_NEOVERSE_N1 &&
+                 part != ARM_CPU_PART_CORTEX_A76 &&
+                 part != QCOM_CPU_PART_KRYO_4XX_GOLD) {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)  /* 4.19 arm64 has no generic vDSO: skip vdso clock spoof */
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+                 struct vdso_time_data **vdso_time_data_ptr =
+                     (struct vdso_time_data **)find_kernel_symbol_exact(
+@@ -189,6 +190,7 @@
+                         ++missing;
+                     }
+                 }
++#endif  /* >= 5.6 */
+ 
+                 {
+                     unsigned long *caps =
