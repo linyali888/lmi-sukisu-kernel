@@ -1,0 +1,33 @@
+--- a/drivers/kernelsu/feature/sucompat.c
++++ b/drivers/kernelsu/feature/sucompat.c
+@@ -165,9 +165,12 @@
+ extern struct static_key_true is_first_zygote;
+ #endif
+ 
++extern int ksu_boot_done;
+ int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+             void *envp, int *flags)
+ {
++    if (!ksu_boot_done)
++        return 0;
+ #ifdef KSU_COMPAT_USE_STATIC_KEY
+     if (static_branch_unlikely(&is_first_zygote))
+ #else
+@@ -182,6 +185,8 @@
+ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode,
+              int *__unused_flags)
+ {
++    if (!ksu_boot_done)
++        return 0;
+     if (unlikely(IS_ERR(*filename) || (*filename)->name == NULL))
+         return 0;
+ 
+@@ -200,6 +205,8 @@
+ }
+ 
+ int ksu_handle_stat(int *dfd, struct filename **filename, int *flags) {
++    if (!ksu_boot_done)
++        return 0;
+     if (unlikely(IS_ERR(*filename) || (*filename)->name == NULL))
+         return 0;
+ 
