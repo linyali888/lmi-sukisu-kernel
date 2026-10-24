@@ -1,0 +1,86 @@
+name: Build lmi SukiSU-Ultra SUSFS kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libfl-dev zip curl \
+            binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi gcc-arm-linux-gnueabi
+
+      - name: Setup Neutron clang
+        run: |
+          mkdir -p "$HOME/clang" && cd "$HOME/clang"
+          curl -LSs -o antman "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod +x antman
+          ./antman -S=latest
+          echo "$HOME/clang/bin" >> "$GITHUB_PATH"
+
+      - name: Clone kernel source at pinned commit
+        run: |
+          git clone --depth=1 https://github.com/LineageOS/android_kernel_xiaomi_sm8250 kernel
+          cd kernel
+          git fetch --depth=1 origin 68c1588cf8d6
+          git checkout FETCH_HEAD
+          git fetch --depth=1 origin 'refs/tags/*cip136*:refs/tags/*cip136*' || true
+          git log --oneline -1
+
+      - name: Integrate SukiSU-Ultra driver (v4.2.1-r1, builtin)
+        run: |
+          cd kernel
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/v4.2.1-r1/kernel/setup.sh" | bash -s v4.2.1-r1
+          ls -la drivers/kernelsu/ | head -8
+          cat "$GITHUB_WORKSPACE/susfs_kconfig.fragment" >> drivers/kernelsu/Kconfig
+
+      - name: Apply SUSFS kernel-side patch (4.19)
+        run: |
+          cd kernel
+          git clone --depth=1 -b kernel-4.19 https://gitlab.com/simonpunk/susfs4ksu susfs4ksu
+          cp susfs4ksu/kernel_patches/fs/* fs/
+          cp susfs4ksu/kernel_patches/include/linux/* include/linux/
+          patch -p1 --fuzz=3 < susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
+          REJECTS=$(find . -name '*.rej' | head -20)
+          if [ -n "$REJECTS" ]; then echo "PATCH REJECTS:"; echo "$REJECTS"; exit 1; fi
+          grep -q 'susfs.o' fs/Makefile
+
+      - name: Configure kernel (phone config + overlay)
+        run: |
+          cd kernel
+          cp "$GITHUB_WORKSPACE/lmi_phone_defconfig" arch/arm64/configs/lmi_phone_defconfig
+          make O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- lmi_phone_defconfig
+          scripts/kconfig/merge_config.sh -m -O out out/.config "$GITHUB_WORKSPACE/overlay.config"
+          make O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+          grep -E 'CONFIG_KSU=|CONFIG_KPM=|CONFIG_KSU_SUSFS=|CONFIG_LOCALVERSION=' out/.config
+          test "$(grep -c '^CONFIG_KSU_SUSFS' out/.config)" -ge 10
+
+      - name: Build Image and dtbs
+        run: |
+          cd kernel
+          make O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- -j"$(nproc)" Image dtbs
+          ls -la out/arch/arm64/boot/Image
+          strings out/arch/arm64/boot/Image | grep -m5 -E 'susfs_[a-z_]+' | head -5
+
+      - name: Package AnyKernel3 zip
+        run: |
+          mkdir -p ak3/kernels
+          cp kernel/out/arch/arm64/boot/Image ak3/kernels/Image
+          cd ak3
+          zip -r9 "../lmi-sukisu-ultra-4.2.1-susfs-AnyKernel3.zip" .
+          cd ..
+          sha256sum lmi-sukisu-ultra-4.2.1-susfs-AnyKernel3.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lmi-sukisu-susfs-ak3
+          path: |
+            lmi-sukisu-ultra-4.2.1-susfs-AnyKernel3.zip
+            kernel/out/arch/arm64/boot/Image
