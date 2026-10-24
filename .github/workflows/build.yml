@@ -41,6 +41,7 @@ jobs:
           ls -la drivers/kernelsu/ | head -8
           grep -q 'config KSU' drivers/kernelsu/Kconfig
           grep -q 'depends on KPROBES' drivers/kernelsu/Kconfig && { echo "wrong driver branch (kprobes dep)"; exit 1; }
+          grep -q 'config KSU_MANUAL_HOOK' drivers/kernelsu/Kconfig || cat "$GITHUB_WORKSPACE/susfs_kconfig.fragment" >> drivers/kernelsu/Kconfig
           sed -i 's|#include <linux/static_call.h>|#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\n#include <linux/static_call.h>\n#endif|' drivers/kernelsu/kernel_includes.h
           grep -A1 'static_call.h' drivers/kernelsu/kernel_includes.h | head -3
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0001-cpu_spoof-4.19-vdso-guard.patch"
@@ -48,8 +49,7 @@ jobs:
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0003-feature-4.19-selinux-hide-gate.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0004-ksud-4.19-selinux-hide-gate.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0005-rules-4.19-unused-vars.patch"
-          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0006-ksu-hooks-sukisu-4.19.patch"
-          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0007-input-4.19-hook.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0008-sucompat-4.19-ret-hooks-stub.patch"
           test -z "$(find drivers/kernelsu -name '*.rej')" && test -z "$(find fs drivers/input -name '*.rej')"
 
       - name: Install susfs v2.2.0 kernel-side (AstideLabs-integrated)

@@ -1,0 +1,5 @@
+# Activate the tree's built-in KSU manual hooks (fs/exec.c, fs/open.c, fs/stat.c)
+# The SukiSU builtin driver provides ksu_handle_execveat/faccessat/stat.
+config KSU_MANUAL_HOOK
+	bool
+	default y
