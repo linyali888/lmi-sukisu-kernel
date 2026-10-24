@@ -5127,7 +5127,26 @@ EXPORT_SYMBOL(vfs_get_link);
 const char *page_get_link_raw(struct dentry *dentry, struct inode *inode,
 			      struct delayed_call *callback)
 {
-	return __page_get_link(dentry, inode, callback);
+	/* inlined __page_get_link(): this tree's namei has no such helper */
+	struct page *page;
+	struct address_space *mapping = inode->i_mapping;
+
+	if (!dentry) {
+		page = find_get_page(mapping, 0);
+		if (!page)
+			return ERR_PTR(-ECHILD);
+		if (!PageUptodate(page)) {
+			put_page(page);
+			return ERR_PTR(-ECHILD);
+		}
+	} else {
+		page = read_mapping_page(mapping, 0, NULL);
+		if (IS_ERR(page))
+			return (char*)page;
+	}
+	set_delayed_call(callback, page_put_link, page);
+	BUG_ON(mapping_gfp_mask(mapping) & __GFP_HIGHMEM);
+	return page_address(page);
 }
 EXPORT_SYMBOL_GPL(page_get_link_raw);
 
