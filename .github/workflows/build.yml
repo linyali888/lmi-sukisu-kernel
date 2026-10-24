@@ -28,9 +28,10 @@ jobs:
 
       - name: Clone kernel source at pinned commit
         run: |
-          git clone --shallow-since=2026-09-01 -b lineage-24.0 https://github.com/LineageOS/android_kernel_xiaomi_sm8250 kernel
-          cd kernel
-          git checkout 68c1588cf8d6 || { echo "pinned commit not in shallow history"; exit 1; }
+          git init kernel && cd kernel
+          git remote add origin https://github.com/LineageOS/android_kernel_xiaomi_sm8250
+          git fetch --depth=1 origin 68c1588cf8d6e0ac4e4d023547edc931a57b996f
+          git checkout --quiet FETCH_HEAD
           git log --oneline -1
 
       - name: Integrate SukiSU-Ultra driver (v4.2.1-r1, builtin)
@@ -40,16 +41,20 @@ jobs:
           ls -la drivers/kernelsu/ | head -8
           cat "$GITHUB_WORKSPACE/susfs_kconfig.fragment" >> drivers/kernelsu/Kconfig
 
-      - name: Apply SUSFS kernel-side patch (4.19)
+      - name: Apply SUSFS kernel-side patch (4.19 + LOS reconciliation)
         run: |
           cd kernel
           git clone --depth=1 -b kernel-4.19 https://gitlab.com/simonpunk/susfs4ksu susfs4ksu
           cp susfs4ksu/kernel_patches/fs/* fs/
           cp susfs4ksu/kernel_patches/include/linux/* include/linux/
-          patch -p1 --fuzz=3 < susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
-          REJECTS=$(find . -name '*.rej' | head -20)
+          patch -p1 --fuzz=3 --forward < "$GITHUB_WORKSPACE/susfs-losfix/50_add_susfs_in_kernel-4.19-los-trimmed.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/susfs-losfix/fs/namespace-los-fix.patch"
+          cp "$GITHUB_WORKSPACE/susfs-losfix/fs/notify/fdinfo.c" fs/notify/fdinfo.c
+          REJECTS=$(find . -name '*.rej' | head)
           if [ -n "$REJECTS" ]; then echo "PATCH REJECTS:"; echo "$REJECTS"; exit 1; fi
           grep -q 'susfs.o' fs/Makefile
+          test "$(grep -c 'susfs_is_current_ksu_domain' fs/namespace.c)" -ge 2
+          grep -q 'INODE_STATE_SUS_KSTAT' fs/notify/fdinfo.c
 
       - name: Configure kernel (phone config + overlay)
         run: |
