@@ -41,27 +41,30 @@ jobs:
           ls -la drivers/kernelsu/ | head -8
           grep -q 'config KSU' drivers/kernelsu/Kconfig
           grep -q 'depends on KPROBES' drivers/kernelsu/Kconfig && { echo "wrong driver branch (kprobes dep)"; exit 1; }
-          grep -q 'config KSU_SUSFS' drivers/kernelsu/Kconfig || cat "$GITHUB_WORKSPACE/susfs_kconfig.fragment" >> drivers/kernelsu/Kconfig
           sed -i 's|#include <linux/static_call.h>|#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\n#include <linux/static_call.h>\n#endif|' drivers/kernelsu/kernel_includes.h
           grep -A1 'static_call.h' drivers/kernelsu/kernel_includes.h | head -3
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0001-cpu_spoof-4.19-vdso-guard.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0002-kpm-4.19-access_ok.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0003-feature-4.19-selinux-hide-gate.patch"
           test -z "$(find drivers/kernelsu -name '*.rej')"
 
-      - name: Apply SUSFS kernel-side patch (4.19 + LOS reconciliation)
+      - name: Install susfs v2.2.0 kernel-side (AstideLabs-integrated)
         run: |
           cd kernel
-          git clone --depth=1 -b kernel-4.19 https://gitlab.com/simonpunk/susfs4ksu susfs4ksu
-          cp susfs4ksu/kernel_patches/fs/* fs/
-          cp susfs4ksu/kernel_patches/include/linux/* include/linux/
-          patch -p1 --fuzz=3 --forward < "$GITHUB_WORKSPACE/susfs-losfix/50_add_susfs_in_kernel-4.19-los-trimmed.patch"
-          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/susfs-losfix/fs/namespace-los-fix.patch"
-          cp "$GITHUB_WORKSPACE/susfs-losfix/fs/notify/fdinfo.c" fs/notify/fdinfo.c
-          REJECTS=$(find . -name '*.rej' | head)
-          if [ -n "$REJECTS" ]; then echo "PATCH REJECTS:"; echo "$REJECTS"; exit 1; fi
+          cp "$GITHUB_WORKSPACE/susfs-v2/include/linux/susfs.h" include/linux/susfs.h
+          cp "$GITHUB_WORKSPACE/susfs-v2/include/linux/susfs_def.h" include/linux/susfs_def.h
+          for f in dcache.c namei.c namespace.c readdir.c stat.c statfs.c proc_namespace.c; do
+            cp "$GITHUB_WORKSPACE/susfs-v2/fs/$f" "fs/$f"
+          done
+          cp "$GITHUB_WORKSPACE/susfs-v2/fs/notify/fdinfo.c" fs/notify/fdinfo.c
+          cp "$GITHUB_WORKSPACE/susfs-v2/fs/proc/cmdline.c" fs/proc/cmdline.c
+          cp "$GITHUB_WORKSPACE/susfs-v2/fs/proc/fd.c" fs/proc/fd.c
+          cp "$GITHUB_WORKSPACE/susfs-v2/fs/proc/task_mmu.c" fs/proc/task_mmu.c
+          grep -q 'susfs.o' fs/Makefile || echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
+          test -f fs/susfs.c
+          grep -q 'SUSFS_MAGIC' include/linux/susfs_def.h
+          grep -q 'susfs_is_sdcard_android_data_not_decrypted' fs/namespace.c
           grep -q 'susfs.o' fs/Makefile
-          test "$(grep -c 'susfs_is_current_ksu_domain' fs/namespace.c)" -ge 2
-          grep -q 'INODE_STATE_SUS_KSTAT' fs/notify/fdinfo.c
 
       - name: Configure kernel (phone config + overlay)
         run: |

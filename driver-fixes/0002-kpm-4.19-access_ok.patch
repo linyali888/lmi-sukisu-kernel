@@ -1,16 +1,94 @@
 --- a/drivers/kernelsu/extension/kpm/kpm.c
 +++ b/drivers/kernelsu/extension/kpm/kpm.c
-@@ -38,6 +38,13 @@
+@@ -38,6 +38,14 @@
  #include <linux/moduleloader.h>
  #endif
  
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
-+/* 4.19 and older: access_ok() still takes a type argument; the inner
-+ * access_ok is painted blue by the preprocessor and resolves to the
-+ * real three-arg function. */
-+#define access_ok(addr, size) access_ok(VERIFY_WRITE, addr, size)
++/* 4.19 and older: access_ok() still takes a type argument */
++static inline int kpm_access_ok(unsigned long addr, unsigned long size)
++{
++	return access_ok(VERIFY_WRITE, addr, size);
++}
 +#endif
 +
  #include "kpm.h"
  #include "compact.h"
  
+@@ -166,12 +174,12 @@
+             res = -EINVAL;
+             goto exit;
+         }
+-        if (!access_ok(arg1, 255))
++        if (!kpm_access_ok(arg1, 255))
+             goto invalid_arg;
+         strncpy_from_user(s->kernel_load_path, (const char __user *)arg1,
+                           255);
+         if (arg2 != 0) {
+-            if (!access_ok(arg2, 255))
++            if (!kpm_access_ok(arg2, 255))
+                 goto invalid_arg;
+             strncpy_from_user(s->kernel_args_buffer,
+                               (const char __user *)arg2, 255);
+@@ -183,7 +191,7 @@
+             res = -EINVAL;
+             goto exit;
+         }
+-        if (!access_ok(arg1, sizeof(s->kernel_name_buffer)))
++        if (!kpm_access_ok(arg1, sizeof(s->kernel_name_buffer)))
+             goto invalid_arg;
+         strncpy_from_user(s->kernel_name_buffer,
+                           (const char __user *)arg1,
+@@ -197,14 +205,14 @@
+             res = -EINVAL;
+             goto exit;
+         }
+-        if (!access_ok(arg1, sizeof(s->kernel_name_buffer)))
++        if (!kpm_access_ok(arg1, sizeof(s->kernel_name_buffer)))
+             goto invalid_arg;
+         strncpy_from_user(s->kernel_name_buffer,
+                           (const char __user *)arg1,
+                           sizeof(s->kernel_name_buffer));
+         sukisu_kpm_info(s->kernel_name_buffer, s->buf,
+                         sizeof(s->buf), &size);
+-        if (!access_ok(arg2, size))
++        if (!kpm_access_ok(arg2, size))
+             goto invalid_arg;
+         res = copy_to_user(arg2, s->buf, size);
+     } else if (control_code == SUKISU_KPM_LIST) {
+@@ -213,7 +221,7 @@
+             res = -EINVAL;
+             goto exit;
+         }
+-        if (!access_ok(arg2, len))
++        if (!kpm_access_ok(arg2, len))
+             goto invalid_arg;
+         sukisu_kpm_list(s->buf, sizeof(s->buf), &res);
+         if (res > len) {
+@@ -223,9 +231,9 @@
+         if (copy_to_user(arg1, s->buf, len) != 0)
+             pr_info("kpm: Copy to user failed.");
+     } else if (control_code == SUKISU_KPM_CONTROL) {
+-        if (!access_ok(arg1, sizeof(s->kpm_name)))
++        if (!kpm_access_ok(arg1, sizeof(s->kpm_name)))
+             goto invalid_arg;
+-        if (!access_ok(arg2, sizeof(s->kpm_args)))
++        if (!kpm_access_ok(arg2, sizeof(s->kpm_args)))
+             goto invalid_arg;
+         long name_len = strncpy_from_user(s->kpm_name,
+                                           (const char __user *)arg1,
+@@ -270,12 +278,12 @@
+         pr_err("kpm: copy_from_user failed\n");
+         return -EFAULT;
+     }
+-    if (!access_ok(cmd.control_code, sizeof(int))) {
++    if (!kpm_access_ok(cmd.control_code, sizeof(int))) {
+         pr_err("kpm: invalid control_code pointer %px\n",
+                (void *)cmd.control_code);
+         return -EFAULT;
+     }
+-    if (!access_ok(cmd.result_code, sizeof(int))) {
++    if (!kpm_access_ok(cmd.result_code, sizeof(int))) {
+         pr_err("kpm: invalid result_code pointer %px\n",
+                (void *)cmd.result_code);
+         return -EFAULT;
