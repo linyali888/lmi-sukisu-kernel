@@ -59,7 +59,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/susfs-v2/fs/notify/fdinfo.c" fs/notify/fdinfo.c
           cp "$GITHUB_WORKSPACE/susfs-v2/fs/proc/cmdline.c" fs/proc/cmdline.c
           cp "$GITHUB_WORKSPACE/susfs-v2/fs/proc/fd.c" fs/proc/fd.c
-          cp "$GITHUB_WORKSPACE/susfs-v2/fs/proc/task_mmu.c" fs/proc/task_mmu.c
+          # task_mmu.c skipped: astide copy targets a pre-mmap_lock tree; smaps sus-path filtering added later
           cp "$GITHUB_WORKSPACE/susfs-v2/fs/susfs.c" fs/susfs.c
           grep -q 'susfs.o' fs/Makefile || echo 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' >> fs/Makefile
           test -f fs/susfs.c
