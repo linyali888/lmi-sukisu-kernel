@@ -48,7 +48,9 @@ jobs:
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0003-feature-4.19-selinux-hide-gate.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0004-ksud-4.19-selinux-hide-gate.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0005-rules-4.19-unused-vars.patch"
-          test -z "$(find drivers/kernelsu -name '*.rej')"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0006-ksu-hooks-sukisu-4.19.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0007-input-4.19-hook.patch"
+          test -z "$(find drivers/kernelsu -name '*.rej')" && test -z "$(find fs drivers/input -name '*.rej')"
 
       - name: Install susfs v2.2.0 kernel-side (AstideLabs-integrated)
         run: |
