@@ -1,0 +1,34 @@
+--- a/drivers/kernelsu/runtime/ksud.c
++++ b/drivers/kernelsu/runtime/ksud.c
+@@ -55,7 +55,9 @@
+     ksu_observer_init();
+     // sanity check, this may influence the performance
+     stop_input_hook();
++    #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+     ksu_selinux_hide_handle_post_fs_data();
++    #endif
+     // retry forced features which failed at second stage
+     ksu_feature_apply_forced();
+     ksu_extension_apply_forced();
+@@ -202,7 +204,9 @@
+ #ifndef KSU_NO_PREINIT
+                 ksu_preinit_release();
+ #endif
+-                ksu_selinux_hide_handle_second_stage();
++                #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
++    ksu_selinux_hide_handle_second_stage();
++    #endif
+                 apply_kernelsu_rules();
+                 cache_sid();
+                 setup_ksu_cred();
+@@ -280,7 +284,9 @@
+ #ifndef KSU_NO_PREINIT
+             ksu_preinit_release();
+ #endif
+-            ksu_selinux_hide_handle_second_stage();
++            #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
++    ksu_selinux_hide_handle_second_stage();
++    #endif
+             apply_kernelsu_rules();
+             cache_sid();
+             setup_ksu_cred();

@@ -20,6 +20,9 @@
 #include "internal.h"
 #include "fd.h"
 
+/* LOS 24.0 4.19 tree backported the 5.11 rename of fcheck_files */
+#define fcheck_files(files, fd) files_lookup_fd_rcu(files, fd)
+
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 extern int susfs_get_non_sus_mnt_id_from_mnt(struct mount *orig_mnt);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT

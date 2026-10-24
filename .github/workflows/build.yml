@@ -46,6 +46,8 @@ jobs:
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0001-cpu_spoof-4.19-vdso-guard.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0002-kpm-4.19-access_ok.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0003-feature-4.19-selinux-hide-gate.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0004-ksud-4.19-selinux-hide-gate.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0005-rules-4.19-unused-vars.patch"
           test -z "$(find drivers/kernelsu -name '*.rej')"
 
       - name: Install susfs v2.2.0 kernel-side (AstideLabs-integrated)

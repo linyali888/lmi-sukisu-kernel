@@ -239,3 +239,10 @@ void susfs_start_sdcard_monitor_fn(void);
 void susfs_init(void);
 
 #endif
+
+/* --- 4.19 build shims (this kernel build) ---
+ * The SukiSU builtin driver calls newer susfs per-process opt-out hooks that
+ * v2.2.0 does not implement yet; provide no-op stubs so the hooks are inert.
+ */
+static inline void susfs_set_current_proc_no_su(void) {}
+static inline void susfs_set_current_proc_umounted_for_zygote_next(void) {}
