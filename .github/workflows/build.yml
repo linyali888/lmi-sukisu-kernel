@@ -22,15 +22,15 @@ jobs:
           curl -LSs -o antman "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
           chmod +x antman
           ./antman -S=latest
+          ./antman --patch=glibc
+          ./clang --version | head -2
           echo "$HOME/clang/bin" >> "$GITHUB_PATH"
 
       - name: Clone kernel source at pinned commit
         run: |
-          git clone --depth=1 https://github.com/LineageOS/android_kernel_xiaomi_sm8250 kernel
+          git clone --shallow-since=2026-09-01 -b lineage-24.0 https://github.com/LineageOS/android_kernel_xiaomi_sm8250 kernel
           cd kernel
-          git fetch --depth=1 origin 68c1588cf8d6
-          git checkout FETCH_HEAD
-          git fetch --depth=1 origin 'refs/tags/*cip136*:refs/tags/*cip136*' || true
+          git checkout 68c1588cf8d6 || { echo "pinned commit not in shallow history"; exit 1; }
           git log --oneline -1
 
       - name: Integrate SukiSU-Ultra driver (v4.2.1-r1, builtin)
