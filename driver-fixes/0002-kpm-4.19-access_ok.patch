@@ -1,5 +1,5 @@
---- a/drivers/kernelsu/extension/kpm.c
-+++ b/drivers/kernelsu/extension/kpm.c
+--- a/drivers/kernelsu/extension/kpm/kpm.c
++++ b/drivers/kernelsu/extension/kpm/kpm.c
 @@ -38,6 +38,13 @@
  #include <linux/moduleloader.h>
  #endif
