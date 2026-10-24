@@ -34,12 +34,14 @@ jobs:
           git checkout --quiet FETCH_HEAD
           git log --oneline -1
 
-      - name: Integrate SukiSU-Ultra driver (v4.2.1-r1, builtin)
+      - name: Integrate SukiSU-Ultra driver (builtin, non-GKI)
         run: |
           cd kernel
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/v4.2.1-r1/kernel/setup.sh" | bash -s v4.2.1-r1
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
           ls -la drivers/kernelsu/ | head -8
-          cat "$GITHUB_WORKSPACE/susfs_kconfig.fragment" >> drivers/kernelsu/Kconfig
+          grep -q 'config KSU' drivers/kernelsu/Kconfig
+          grep -q 'depends on KPROBES' drivers/kernelsu/Kconfig && { echo "wrong driver branch (kprobes dep)"; exit 1; }
+          grep -q 'config KSU_SUSFS' drivers/kernelsu/Kconfig || cat "$GITHUB_WORKSPACE/susfs_kconfig.fragment" >> drivers/kernelsu/Kconfig
 
       - name: Apply SUSFS kernel-side patch (4.19 + LOS reconciliation)
         run: |
