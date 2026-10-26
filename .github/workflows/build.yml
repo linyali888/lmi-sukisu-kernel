@@ -37,7 +37,9 @@ jobs:
       - name: Integrate SukiSU-Ultra driver (builtin, non-GKI)
         run: |
           cd kernel
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s ce75122b
+          git -C KernelSU rev-parse --short HEAD
+          git -C KernelSU rev-parse --short HEAD | grep -q ce75122 && echo DRIVER_PINNED_OK
           ls -la drivers/kernelsu/ | head -8
           grep -q 'config KSU' drivers/kernelsu/Kconfig
           grep -q 'depends on KPROBES' drivers/kernelsu/Kconfig && { echo "wrong driver branch (kprobes dep)"; exit 1; }
