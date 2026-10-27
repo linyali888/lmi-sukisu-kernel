@@ -1,0 +1,12 @@
+--- a/drivers/kernelsu/runtime/ksud.c
++++ b/drivers/kernelsu/runtime/ksud.c
+@@ -203,7 +203,9 @@
+                 ksu_preinit_release();
+ #endif
+                 ksu_selinux_hide_handle_second_stage();
++#if 0 /* 4.19 test: apply_kernelsu_rules suspected boot panic */
+                 apply_kernelsu_rules();
++#endif
+                 cache_sid();
+                 setup_ksu_cred();
+                 // after apply_kernelsu_rules, so that selinux_hide has its sepolicy backup

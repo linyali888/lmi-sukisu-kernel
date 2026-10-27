@@ -55,6 +55,7 @@ jobs:
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0009-ksu-boot-ready-flag.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0010-sucompat-boot-ready-guards.patch"
           patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0011-open-remove-faccessat-hook.patch"
+          patch -p1 --fuzz=3 < "$GITHUB_WORKSPACE/driver-fixes/0013-ksud-gate-apply-rules.patch"
           test -z "$(find drivers/kernelsu -name '*.rej')" && test -z "$(find fs drivers/input -name '*.rej')"
 
       - name: Install susfs v2.2.0 kernel-side (AstideLabs-integrated)
