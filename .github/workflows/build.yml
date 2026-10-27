@@ -76,6 +76,25 @@ jobs:
           grep -q 'susfs_is_sdcard_android_data_not_decrypted' fs/namespace.c
           grep -q 'susfs.o' fs/Makefile
 
+      - name: Inventory and neutralize unknown manual-hook sites
+        run: |
+          cd kernel
+          python3 - <<'PY'
+          import re, subprocess, pathlib
+          keep = {'fs/exec.c', 'kernel/reboot.c'}  # signatures verified against the SUSFS-variant driver
+          out = subprocess.run(['grep','-rl','CONFIG_KSU_MANUAL_HOOK','--include=*.c','--include=*.h','.'], capture_output=True, text=True).stdout.split()
+          out = [f[2:] if f.startswith('./') else f for f in out]
+          print('MANUAL_HOOK SITES FOUND:', sorted(out))
+          for f in out:
+              if f in keep:
+                  print(f'kept {f}')
+                  continue
+              p = pathlib.Path(f); s = p.read_text()
+              s2 = re.sub(r'#ifdef CONFIG_KSU_MANUAL_HOOK[^\n]*\n.*?#endif[^\n]*\n', '', s, flags=re.S)
+              p.write_text(s2)
+              print(f'stripped {f}: {s.count("CONFIG_KSU_MANUAL_HOOK")} -> {s2.count("CONFIG_KSU_MANUAL_HOOK")}')
+          PY
+
       - name: Configure kernel (phone config + overlay)
         run: |
           cd kernel
