@@ -74,6 +74,16 @@ jobs:
               print('sucompat kill switch applied')
           else:
               print('execveat handler ACTIVE')
+          if os.path.exists(base + '/kill-postfsdata.flag'):
+              p = 'drivers/kernelsu/runtime/ksud.c'
+              s = io.open(p, encoding='utf-8').read()
+              n = s.count('on_post_fs_data();')
+              assert n >= 1, 'on_post_fs_data call not found'
+              s = s.replace('on_post_fs_data();', '/* A/B: on_post_fs_data suppressed */;', 1)
+              io.open(p, 'w', encoding='utf-8').write(s)
+              print('on_post_fs_data suppressed (call sites found: %d)' % n)
+          else:
+              print('on_post_fs_data ACTIVE')
           if os.path.exists(base + '/kill-sucompat.flag'):
               p = 'drivers/kernelsu/feature/sucompat.c'
               s = io.open(p, encoding='utf-8').read()
