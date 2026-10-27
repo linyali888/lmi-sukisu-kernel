@@ -62,21 +62,28 @@ jobs:
         run: |
           cd kernel
           python3 - <<'PY'
-          import io, re
-          p = 'drivers/kernelsu/feature/sucompat.c'
-          s = io.open(p, encoding='utf-8').read()
-          m = re.search(r'(int ksu_handle_execveat\(int \*fd, struct filename \*\*filename_ptr, void \*argv,\s*\n\s*void \*envp, int \*flags\)\s*\n\{\n)', s)
-          assert m, 'execveat handler anchor not found'
-          s = s[:m.end()] + '    return 0; /* A/B kill switch */\n' + s[m.end():]
-          io.open(p, 'w', encoding='utf-8').write(s)
-          print('sucompat kill switch applied')
-          p = 'drivers/kernelsu/supercall/dispatch.c'
-          s = io.open(p, encoding='utf-8').read()
-          m = re.search(r'(int ksu_handle_sys_reboot\(int magic1, int magic2, unsigned int cmd, void __user \*\*arg\)\s*\n\{\n)', s)
-          assert m, 'sys_reboot handler anchor not found'
-          s = s[:m.end()] + '    return -EINVAL; /* A/B kill switch */\n' + s[m.end():]
-          io.open(p, 'w', encoding='utf-8').write(s)
-          print('dispatch kill switch applied')
+          import io, os, re
+          base = os.environ['GITHUB_WORKSPACE']
+          if os.path.exists(base + '/kill-execveat.flag'):
+              p = 'drivers/kernelsu/feature/sucompat.c'
+              s = io.open(p, encoding='utf-8').read()
+              m = re.search(r'(int ksu_handle_execveat\(int \*fd, struct filename \*\*filename_ptr, void \*argv,\s*\n\s*void \*envp, int \*flags\)\s*\n\{\n)', s)
+              assert m, 'execveat handler anchor not found'
+              s = s[:m.end()] + '    return 0; /* A/B kill switch */\n' + s[m.end():]
+              io.open(p, 'w', encoding='utf-8').write(s)
+              print('sucompat kill switch applied')
+          else:
+              print('execveat handler ACTIVE')
+          if os.path.exists(base + '/kill-sysreboot.flag'):
+              p = 'drivers/kernelsu/supercall/dispatch.c'
+              s = io.open(p, encoding='utf-8').read()
+              m = re.search(r'(int ksu_handle_sys_reboot\(int magic1, int magic2, unsigned int cmd, void __user \*\*arg\)\s*\n\{\n)', s)
+              assert m, 'sys_reboot handler anchor not found'
+              s = s[:m.end()] + '    return -EINVAL; /* A/B kill switch */\n' + s[m.end():]
+              io.open(p, 'w', encoding='utf-8').write(s)
+              print('dispatch kill switch applied')
+          else:
+              print('sys_reboot handler ACTIVE')
           PY
 
       - name: Install susfs v2.2.0 kernel-side (AstideLabs-integrated)
