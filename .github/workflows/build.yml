@@ -74,6 +74,16 @@ jobs:
               print('sucompat kill switch applied')
           else:
               print('execveat handler ACTIVE')
+          if os.path.exists(base + '/kill-sucompat.flag'):
+              p = 'drivers/kernelsu/feature/sucompat.c'
+              s = io.open(p, encoding='utf-8').read()
+              m = re.search(r'return ksu_handle_execveat_sucompat\(fd, filename_ptr, argv, envp,\s*\n\s*flags\);', s)
+              assert m, 'sucompat call anchor not found'
+              s = s[:m.start()] + 'return 0; /* A/B: sucompat path suppressed */' + s[m.end():]
+              io.open(p, 'w', encoding='utf-8').write(s)
+              print('sucompat path suppressed inside ksu_handle_execveat')
+          else:
+              print('sucompat path ACTIVE')
           if os.path.exists(base + '/kill-sysreboot.flag'):
               p = 'drivers/kernelsu/supercall/dispatch.c'
               s = io.open(p, encoding='utf-8').read()
